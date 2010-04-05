@@ -87,9 +87,14 @@ class Dname:
     def workspace_active_changed(self, screen, previous):
         self.workspace_active = screen.get_active_workspace()
         font_desc = pango.FontDescription(self.options.font)
-        markup = '<span font_desc="%s" color="%s">%s</span>' % (font_desc,self.options.text_color,
-                                                                self.workspace_active.get_name())
+
+        # tertiary hack! assign the proper function based on the option given
+        desktop_func = self.options.use_numbers and self.workspace_active.get_number or self.workspace_active.get_name
+            
+        markup = '<span font_desc="%s" color="%s">%s</span>' % (font_desc,self.options.text_color,desktop_func())
         self.label.set_markup(markup)
+        new_x, new_y = self.label.get_layout().get_pixel_size()
+        self.window.resize(new_x + (self.options.padding * 2), new_y + (self.options.padding * 2))
         self.window.show_all()
 
     def show(self):
@@ -107,12 +112,17 @@ class Dname:
                 print "DEBUG: unable to parse bgcolor name"
             self.window.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse('black'))
 
+        self.hbox = gtk.HBox()
+
         self.label = gtk.Label()
         self.label.set_use_markup(True)
         self.label.set_alignment(0.5,0.5)
         self.label.set_justify(gtk.JUSTIFY_CENTER)
-        self.window.add(self.label)
 
+        self.hbox.add(self.label)
+        #self.window.add(self.label)
+        
+        self.window.add(self.hbox)
         self.window.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DOCK)
         self.window.set_keep_below(True)
 
@@ -144,6 +154,8 @@ def main():
                       help='set the text color')
     parser.add_option('--bgcolor',dest='bgcolor',default='black',
                       help='set the background color')
+    parser.add_option('--numbers',dest='use_numbers',action='store_true',
+                        help='use desktop numbers instead of names',default=False) 
 
     (options, args) = parser.parse_args()
 
